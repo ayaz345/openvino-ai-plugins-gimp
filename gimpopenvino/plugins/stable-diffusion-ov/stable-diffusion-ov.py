@@ -109,20 +109,20 @@ def list_models(weight_path, SD):
         dir_path = os.path.join(weight_path, "stable-diffusion-ov/controlnet-openpose")
         flag_openpose = True
         print("flag_openpose", flag_openpose)
-        
+
     if flag_openpose:
         text = Path(dir_path) / 'text_encoder.xml'
         unet = Path(dir_path) / 'unet_controlnet.xml'
         vae = Path(dir_path) / 'vae_decoder.xml'
-       
+
         if os.path.isfile(text) and os.path.isfile(unet) and os.path.isfile(vae):
                 print("ALL OKAY !?")
                 model_list.append(SD)
-        
+
         return model_list   
-        
-        
-        
+
+
+
     if flag:
         text = Path(dir_path) / 'text_encoder.xml'
         unet = Path(dir_path) / 'unet.xml'
@@ -130,20 +130,20 @@ def list_models(weight_path, SD):
         if os.path.isfile(text) and os.path.isfile(unet) and os.path.isfile(vae):
                 model_list.append(SD)
         return model_list
-        
+
     if SD == "SD_1.5":
         dir_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.5")
-     
+
     for file in os.scandir(dir_path): #, recursive=True):
         text = Path(file) / 'text_encoder.xml'
         unet = Path(file) / 'unet.xml'
         vae = Path(file) / 'vae_decoder.xml'
         if os.path.isfile(text) and os.path.isfile(unet) and os.path.isfile(vae):
                
-                model = "SD_1.5_" + os.path.basename(file)
-                model_list.append(model)
-          
-            
+            model = f"SD_1.5_{os.path.basename(file)}"
+            model_list.append(model)
+
+
     return model_list
        
     

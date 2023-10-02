@@ -132,7 +132,6 @@ def semseg(procedure, image, drawable, device_name, model_name, progress_bar, co
             if f_name.startswith("cache"):
                 os.remove(os.path.join(my_dir, f_name))
 
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
     else:
         show_dialog(
             "Inference not successful. See error_log.txt in GIMP-OpenVINO folder.",
@@ -140,7 +139,8 @@ def semseg(procedure, image, drawable, device_name, model_name, progress_bar, co
             "error",
             image_paths
         )
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
+    return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
 
 
 def run(procedure, run_mode, image, n_drawables, layer, args, data):

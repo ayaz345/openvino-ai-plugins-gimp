@@ -29,8 +29,9 @@ class RetinaFace(Model):
 
         assert len(self.net.input_info) == 1, "Expected 1 input blob"
         expected_outputs_count = (6, 9, 12)
-        assert len(self.net.outputs) in expected_outputs_count, "Expected {} or {} output blobs".format(
-            ', '.join(str(count) for count in expected_outputs_count[:-1]), int(expected_outputs_count[-1]))
+        assert (
+            len(self.net.outputs) in expected_outputs_count
+        ), f"Expected {', '.join(str(count) for count in expected_outputs_count[:-1])} or {int(expected_outputs_count[-1])} output blobs"
 
         self.threshold = threshold
         self.detect_masks = len(self.net.outputs) == 12
@@ -173,7 +174,7 @@ class RetinaFacePostprocessor:
                 masks = self._get_mask_scores(type_scores_outputs[idx], anchor_num)
                 mask_scores_list.extend(masks[threshold_mask])
 
-        if len(scores_list) > 0:
+        if scores_list:
             proposals_list = np.array(proposals_list)
             scores_list = np.array(scores_list)
             landmarks_list = np.array(landmarks_list)
@@ -202,46 +203,44 @@ class RetinaFacePostprocessor:
             if self._process_landmarks:
                 landmarks_x_coords = np.array(landmarks_list)[:, :, ::2].reshape(len(landmarks_list), -1) / scale_x
                 landmarks_y_coords = np.array(landmarks_list)[:, :, 1::2].reshape(len(landmarks_list), -1) / scale_y
-                if self._detect_masks:
-                    for i in range(len(scores_list)):
+                for i in range(len(scores_list)):
+                    if self._detect_masks:
                         result.append(DetectionWithLandmarks(x_mins[i], y_mins[i], x_maxs[i], y_maxs[i], scores[i],
                                                              0 if mask_scores_list[i] > mask_prob_threshold else 1,
                                                              landmarks_x_coords[i], landmarks_y_coords[i]))
-                else:
-                    for i in range(len(scores_list)):
+                    else:
                         result.append(DetectionWithLandmarks(x_mins[i], y_mins[i], x_maxs[i], y_maxs[i], scores[i], 0,
                                                              landmarks_x_coords[i], landmarks_y_coords[i]))
             else:
-                for i in range(len(scores_list)):
-                    result.append(Detection(x_mins[i], y_mins[i], x_maxs[i], y_maxs[i], scores[i], 0))
-
+                result.extend(
+                    Detection(
+                        x_mins[i], y_mins[i], x_maxs[i], y_maxs[i], scores[i], 0
+                    )
+                    for i in range(len(scores_list))
+                )
         return result
 
     def _get_proposals(self, bbox_deltas, anchor_num, anchors):
         bbox_deltas = bbox_deltas.transpose((1, 2, 0))
         bbox_pred_len = bbox_deltas.shape[2] // anchor_num
         bbox_deltas = bbox_deltas.reshape((-1, bbox_pred_len))
-        proposals = self.bbox_pred(anchors, bbox_deltas)
-        return proposals
+        return self.bbox_pred(anchors, bbox_deltas)
 
     @staticmethod
     def _get_scores(scores, anchor_num):
         scores = scores[anchor_num:, :, :]
-        scores = scores.transpose((1, 2, 0)).reshape(-1)
-        return scores
+        return scores.transpose((1, 2, 0)).reshape(-1)
 
     @staticmethod
     def _get_mask_scores(type_scores, anchor_num):
         mask_scores = type_scores[anchor_num * 2:, :, :]
-        mask_scores = mask_scores.transpose((1, 2, 0)).reshape(-1)
-        return mask_scores
+        return mask_scores.transpose((1, 2, 0)).reshape(-1)
 
     def _get_landmarks(self, landmark_deltas, anchor_num, anchors):
         landmark_pred_len = landmark_deltas.shape[0] // anchor_num
         landmark_deltas = landmark_deltas.transpose((1, 2, 0)).reshape((-1, 5, landmark_pred_len // 5))
         landmark_deltas *= self.landmark_std
-        landmarks = self.landmark_pred(anchors, landmark_deltas)
-        return landmarks
+        return self.landmark_pred(anchors, landmark_deltas)
 
     @staticmethod
     def bbox_pred(boxes, box_deltas):
@@ -311,8 +310,9 @@ class RetinaFacePyTorch(Model):
 
         assert len(self.net.input_info) == 1, "Expected 1 input blob"
         expected_outputs_count = (2, 3)
-        assert len(self.net.outputs) in expected_outputs_count, "Expected {} or {} output blobs".format(
-            expected_outputs_count[0], expected_outputs_count[1])
+        assert (
+            len(self.net.outputs) in expected_outputs_count
+        ), f"Expected {expected_outputs_count[0]} or {expected_outputs_count[1]} output blobs"
 
         self.threshold = threshold
         self.process_landmarks = len(self.net.outputs) == 3
@@ -393,14 +393,34 @@ class RetinaFacePyTorchPostprocessor:
             if self._process_landmarks:
                 landmarks_x_coords = np.array(landmarks)[:, ::2] / scale_x
                 landmarks_y_coords = np.array(landmarks)[:, 1::2] / scale_y
-                for x_min, y_min, x_max, y_max, score, landmarks_x, landmarks_y in zip(
-                    x_mins, y_mins, x_maxs, y_maxs, scores, landmarks_x_coords, landmarks_y_coords):
-                    result.append(DetectionWithLandmarks(x_min, y_min, x_max, y_max, score, 0, landmarks_x,
-                                                         landmarks_y))
+                result.extend(
+                    DetectionWithLandmarks(
+                        x_min,
+                        y_min,
+                        x_max,
+                        y_max,
+                        score,
+                        0,
+                        landmarks_x,
+                        landmarks_y,
+                    )
+                    for x_min, y_min, x_max, y_max, score, landmarks_x, landmarks_y in zip(
+                        x_mins,
+                        y_mins,
+                        x_maxs,
+                        y_maxs,
+                        scores,
+                        landmarks_x_coords,
+                        landmarks_y_coords,
+                    )
+                )
             else:
-                for x_min, y_min, x_max, y_max, score in zip(x_mins, y_mins, x_maxs, y_maxs, scores):
-                    result.append(Detection(x_min, y_min, x_max, y_max, score, 0))
-
+                result.extend(
+                    Detection(x_min, y_min, x_max, y_max, score, 0)
+                    for x_min, y_min, x_max, y_max, score in zip(
+                        x_mins, y_mins, x_maxs, y_maxs, scores
+                    )
+                )
         return result
 
     @staticmethod
@@ -420,8 +440,7 @@ class RetinaFacePyTorchPostprocessor:
                     for cy, cx in product(dense_cy, dense_cx):
                         anchors += [cx, cy, s_kx, s_ky]
 
-        priors = np.array(anchors).reshape((-1, 4))
-        return priors
+        return np.array(anchors).reshape((-1, 4))
 
     def _get_proposals(self, raw_boxes, priors, image_size):
         proposals = self.decode_boxes(raw_boxes, priors, self.variance)
@@ -446,9 +465,17 @@ class RetinaFacePyTorchPostprocessor:
 
     @staticmethod
     def decode_landmarks(raw_landmarks, priors, variance):
-        landmarks = np.concatenate((priors[:, :2] + raw_landmarks[:, :2] * variance[0] * priors[:, 2:],
-                                    priors[:, :2] + raw_landmarks[:, 2:4] * variance[0] * priors[:, 2:],
-                                    priors[:, :2] + raw_landmarks[:, 4:6] * variance[0] * priors[:, 2:],
-                                    priors[:, :2] + raw_landmarks[:, 6:8] * variance[0] * priors[:, 2:],
-                                    priors[:, :2] + raw_landmarks[:, 8:10] * variance[0] * priors[:, 2:]), 1)
-        return landmarks
+        return np.concatenate(
+            (
+                priors[:, :2] + raw_landmarks[:, :2] * variance[0] * priors[:, 2:],
+                priors[:, :2]
+                + raw_landmarks[:, 2:4] * variance[0] * priors[:, 2:],
+                priors[:, :2]
+                + raw_landmarks[:, 4:6] * variance[0] * priors[:, 2:],
+                priors[:, :2]
+                + raw_landmarks[:, 6:8] * variance[0] * priors[:, 2:],
+                priors[:, :2]
+                + raw_landmarks[:, 8:10] * variance[0] * priors[:, 2:],
+            ),
+            1,
+        )

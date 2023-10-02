@@ -37,10 +37,10 @@ class ImreadWrapper(ImagesCapture):
     def __init__(self, input, loop):
         self.loop = loop
         if not os.path.isfile(input):
-            raise InvalidInput("Can't find the image by {}".format(input))
+            raise InvalidInput(f"Can't find the image by {input}")
         self.image = cv2.imread(input, cv2.IMREAD_COLOR)
         if self.image is None:
-            raise OpenError("Can't open the image from {}".format(input))
+            raise OpenError(f"Can't open the image from {input}")
         self.can_read = True
 
     def read(self):
@@ -64,17 +64,17 @@ class DirReader(ImagesCapture):
         self.loop = loop
         self.dir = input
         if not os.path.isdir(self.dir):
-            raise InvalidInput("Can't find the dir by {}".format(input))
+            raise InvalidInput(f"Can't find the dir by {input}")
         self.names = sorted(os.listdir(self.dir))
         if not self.names:
-            raise OpenError("The dir {} is empty".format(input))
+            raise OpenError(f"The dir {input} is empty")
         self.file_id = 0
         for name in self.names:
             filename = os.path.join(self.dir, name)
             image = cv2.imread(filename, cv2.IMREAD_COLOR)
             if image is not None:
                 return
-        raise OpenError("Can't read the first image from {}".format(input))
+        raise OpenError(f"Can't read the first image from {input}")
 
     def read(self):
         while self.file_id < len(self.names):
@@ -107,7 +107,7 @@ class VideoCapWrapper(ImagesCapture):
         self.cap = cv2.VideoCapture()
         status = self.cap.open(input)
         if not status:
-            raise InvalidInput("Can't open the video from {}".format(input))
+            raise InvalidInput(f"Can't open the video from {input}")
 
     def read(self):
         status, image = self.cap.read()
@@ -116,9 +116,7 @@ class VideoCapWrapper(ImagesCapture):
                 return None
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             status, image = self.cap.read()
-            if not status:
-                return None
-        return image
+        return None if not status else image
 
     def fps(self):
         return self.cap.get(cv2.CAP_PROP_FPS)
@@ -140,15 +138,13 @@ class CameraCapWrapper(ImagesCapture):
             self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
             self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
             if not status:
-                raise OpenError("Can't open the camera from {}".format(input))
+                raise OpenError(f"Can't open the camera from {input}")
         except ValueError:
-            raise InvalidInput("Can't find the camera {}".format(input))
+            raise InvalidInput(f"Can't find the camera {input}")
 
     def read(self):
         status, image = self.cap.read()
-        if not status:
-            return None
-        return image
+        return None if not status else image
 
     def fps(self):
         return self.cap.get(cv2.CAP_PROP_FPS)

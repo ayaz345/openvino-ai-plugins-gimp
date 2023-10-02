@@ -63,11 +63,11 @@ def run(model_name,device_name):
     #config_path = os.path.join(weight_path, "stable-diffusion-ov/config.json")
     #f = open(config_path)
     #data = json.load(f)
-   
-   
+
+
     #model_name = data["model_version"] # "SD_1.5" #For SD 1.4 version use "SD_1.4"
     #device_name = data["device_list"] # ["CPU","GPU.0","GPU.0"] #To run on iGPU change to "GPU". To run on dGPU change to "GPU.1"
-   
+
     log.info('Model Name: %s',model_name )
     if model_name == "SD_1.4":
         model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.4")
@@ -85,7 +85,7 @@ def run(model_name,device_name):
         model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.5-inpainting")
     elif model_name == "controlnet_openpose": 
         model_path = os.path.join(weight_path, "stable-diffusion-ov/controlnet-openpose")
-             
+
     else:
         model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.4")
         device_name = ["CPU","GPU","GPU"]
@@ -106,14 +106,14 @@ def run(model_name,device_name):
         model = model_path,
         device = device_name
     )
-        
+
 
     else:
         engine = StableDiffusionEngine(
             model = model_path,
             device = device_name
         )    
-    
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
@@ -122,7 +122,7 @@ def run(model_name,device_name):
         s2.connect((HOST, 65433))
         s2.sendall(b"Ready")
         print("Ready")
-   
+
         while True:
             conn, addr = s.accept()
             with conn:
@@ -130,7 +130,7 @@ def run(model_name,device_name):
                 while True:
                     print("Waiting")
                     data = conn.recv(1024)
-                    
+
                     if data.decode() == "kill":
                         os._exit(0)
                     if data.decode() == "ping":
@@ -140,14 +140,14 @@ def run(model_name,device_name):
                         tosend = bytes(model_name, 'utf-8')
                         conn.sendall(tosend)
                         continue                       
-                 
+
                     if not data:
                         break
                     try:    
                         weight_path = get_weight_path()
                         with open(os.path.join(weight_path, "..", "gimp_openvino_run_sd.json"), "r") as file:
                             data_output = json.load(file)
-                       
+
                         prompt = data_output["prompt"]
                         scheduler = data_output["scheduler"]
                         negative_prompt = data_output["negative_prompt"]
@@ -157,16 +157,16 @@ def run(model_name,device_name):
                         strength = data_output["strength"]
                         seed = data_output["seed"]
                         create_gif = data_output["create_gif"]
-                     
-                        
-                        
+
+
+
                         if scheduler == "LMSDiscreteScheduler":
                              log.info('LMSDiscreteScheduler...')
                              scheduler = LMSDiscreteScheduler(
                                     beta_start=0.00085,
                                     beta_end=0.012,
                                     beta_schedule="scaled_linear",
-                                    
+
                                 )
                         elif scheduler == "PNDMScheduler":
                             log.info('PNDMScheduler...')
@@ -176,13 +176,13 @@ def run(model_name,device_name):
                                 beta_end=0.012,
                                 beta_schedule="scaled_linear",
                                 skip_prk_steps = True,
-                                
+
                             )
-                        
+
                         elif scheduler == "UniPCMultistepScheduler":
                             log.info('UniPCMultistepScheduler')
                             scheduler =  UniPCMultistepScheduler.from_pretrained(os.path.join(weight_path, "stable-diffusion-ov" , "UniPCMultistepScheduler_config"))
-                          
+
                         else:
                              log.info('EulerDiscreteScheduler...')
                              scheduler = EulerDiscreteScheduler(
@@ -190,8 +190,8 @@ def run(model_name,device_name):
                              beta_end=0.012, 
                              beta_schedule="scaled_linear"
                              )
-              
-                        
+
+
                         strength = 1.0 if init_image is None else strength
                         log.info('Starting inference...')
                         log.info('Prompt: %s',prompt)
@@ -200,18 +200,18 @@ def run(model_name,device_name):
                         log.info('guidance_scale: %s',guidance_scale)
                         log.info('strength: %s',strength)
                         log.info('init_image: %s',init_image)
-                        
+
                         if seed is not None:   
                             np.random.seed(int(seed))
                             log.info('Seed: %s',seed)
                         else:
                             ran_seed = random.randrange(4294967294) #4294967294 
-                            np.random.seed(int(ran_seed))
+                            np.random.seed(ran_seed)
                             log.info('Random Seed: %s',ran_seed)
-                                                
+
                         if model_name ==  "SD_1.5_Inpainting":
-          
-                            
+
+
                             output = engine(
                                 prompt = prompt,
                                 negative_prompt = negative_prompt,
@@ -229,13 +229,13 @@ def run(model_name,device_name):
                         )
 
                         elif model_name ==  "controlnet_openpose":
-          
-                            
+
+
                             output = engine(
                                 prompt = prompt,
                                 negative_prompt = negative_prompt,
                                 image = Image.open(init_image),
-                                
+
                                 num_inference_steps = num_infer_steps,
                                 guidance_scale = guidance_scale,
                                 eta = 0.0,
@@ -245,7 +245,7 @@ def run(model_name,device_name):
                                 callback_userdata = conn
                         )
 
-                                               
+
 
                         else:
                             output = engine(
@@ -262,16 +262,16 @@ def run(model_name,device_name):
                                 callback = progress_callback,
                                 callback_userdata = conn
                             ) 
-                        
-                  
+
+
                         if model_name == "controlnet_openpose":
                             output.save(os.path.join(weight_path, "..", "cache.png"))
                             src_width,src_height = output.size
                         else:
                             cv2.imwrite(os.path.join(weight_path, "..", "cache.png"), output) #, output[:, :, ::-1])
                             src_height,src_width, _ = output.shape
-                      
-                        
+
+
                         data_output["src_height"] = src_height
                         data_output["src_width"] = src_width
 
@@ -286,7 +286,7 @@ def run(model_name,device_name):
                                 os.remove(os.path.join(my_dir, f_name))
 
                     except Exception as error:
-                      
+
                         with open(os.path.join(weight_path, "..", "gimp_openvino_run_sd.json"), "w") as file:
                             data_output["inference_status"] = "failed"
                             json.dump(data_output, file)

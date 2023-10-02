@@ -57,7 +57,9 @@ class SegmentationModel(Model):
         elif len(out_size) == 4:
             self.out_channels = out_size[1]
         else:
-            raise Exception("Unexpected output blob shape {}. Only 4D and 3D output blobs are supported".format(out_size))
+            raise Exception(
+                f"Unexpected output blob shape {out_size}. Only 4D and 3D output blobs are supported"
+            )
 
         return blob_name
 

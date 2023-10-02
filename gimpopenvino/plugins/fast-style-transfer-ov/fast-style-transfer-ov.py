@@ -106,14 +106,14 @@ def styletransfer(procedure, image, drawable, device_name, model_name, progress_
         json.dump({"device_name": device_name,"model_name": model_name, "inference_status": "started"}, file)
 
     # Run inference and load as layer
-    subprocess.call([python_path, plugin_path]) 
+    subprocess.call([python_path, plugin_path])
     with open(os.path.join(weight_path, "..", "gimp_openvino_run.json"), "r") as file:
         data_output = json.load(file)
     image.undo_group_end()
     Gimp.context_pop()
     #scale = 3
     if data_output["inference_status"] == "success":
-    
+
         result = Gimp.file_load(
             Gimp.RunMode.NONINTERACTIVE,
             Gio.file_new_for_path(os.path.join(weight_path, "..", "cache.png")),
@@ -141,8 +141,6 @@ def styletransfer(procedure, image, drawable, device_name, model_name, progress_
             if f_name.startswith("cache"):
                 os.remove(os.path.join(my_dir, f_name))
 
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
-
     else:
         show_dialog(
             "Inference not successful. See error_log.txt in GIMP-OpenVINO folder.",
@@ -150,7 +148,8 @@ def styletransfer(procedure, image, drawable, device_name, model_name, progress_
             "error",
             image_paths
         )
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
+    return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
 
 
 def run(procedure, run_mode, image, n_drawables, layer, args, data):

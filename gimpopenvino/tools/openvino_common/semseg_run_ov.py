@@ -72,7 +72,7 @@ class SegmentationVisualizer:
     def get_palette_from_file(self, colors_path):
         with open(colors_path, 'r') as file:
             colors = []
-            for line in file.readlines():
+            for line in file:
                 values = line[line.index('(')+1:line.index(')')].split(',')
                 colors.append([int(v.strip()) for v in values])
             return colors
@@ -98,9 +98,7 @@ class SaliencyMapVisualizer:
 
 
 def render_segmentation(frame, masks, visualiser, only_masks=False):
-    output = visualiser.apply_color_map(masks)
-   
-    return output
+    return visualiser.apply_color_map(masks)
  
 
 

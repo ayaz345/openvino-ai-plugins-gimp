@@ -22,7 +22,7 @@ class SuperResolution(Model):
         super().__init__(ie, model_path)
         self.model_name = model_name
         self.reshape(input_image_shape)
-        if self.model_name == "esrgan" or self.model_name == "edsr":
+        if self.model_name in ["esrgan", "edsr"]:
             self.input_blob_name = self.prepare_inputs()
         else:
             self.input_blob_name , self.bicinput_blob_name  = self.prepare_inputs() #, self.bicinput_blob_name
@@ -34,7 +34,7 @@ class SuperResolution(Model):
             h, w = base_shape
         else:
             h, w, _ = base_shape
-   
+
 
         input_iter = iter(self.net.input_info)
         input_layer = next(input_iter)
@@ -59,14 +59,14 @@ class SuperResolution(Model):
         input_shape[2]=h
         input_shape[3]=w
 
-        if self.model_name == "esrgan" or self.model_name == "edsr":
-           self.net.reshape({input_layer: input_shape})
+        if self.model_name in ["esrgan", "edsr"]:
+            self.net.reshape({input_layer: input_shape})
         else:
             self.net.reshape({input_layer: input_shape, bicinput_blob_name: bicinput_size})
 
     def prepare_inputs(self):
         input_num = len(self.net.input_info)
-        if input_num != 1 and input_num != 2:
+        if input_num not in [1, 2]:
             raise RuntimeError("The demo supports topologies with 1 or 2 inputs only")
 
         iter_blob = iter(self.net.input_info)
@@ -79,7 +79,7 @@ class SuperResolution(Model):
              raise RuntimeError("one or 3-channel 4-dimensional model's input is expected")
         else:
             self.n, self.c, self.h, self.w = input_size
-        
+
         print("iter1",input_blob_name)
 
         if input_num == 2:
@@ -87,21 +87,21 @@ class SuperResolution(Model):
             #print("iter2",bicinput_blob_name)
             bicinput_blob = self.net.input_info[bicinput_blob_name]
             bicinput_blob.precision = "FP32"
-            temp = 0
             #print("input_blob :", input_blob.input_data.shape)
             bicinput_size = bicinput_blob.input_data.shape
             #print("bic :", bicinput_blob.input_data.shape)
             if len(bicinput_size) != 4:
                 raise RuntimeError("Number of dimensions for both inputs must be 4")
             if input_size[2] >= bicinput_size[2] and input_size[3] >= bicinput_size[3]:
-             print("add later")
-             input_blob_name = temp 
-             input_blob_name = bicinput_blob_name
-             bicinput_blob_name = temp
+                print("add later")
+                temp = 0
+                input_blob_name = temp
+                input_blob_name = bicinput_blob_name
+                bicinput_blob_name = temp
 
         #print("input_blob_name in pre inputs", input_blob_name)
-       
-        if self.model_name == "esrgan" or self.model_name == "edsr":
+
+        if self.model_name in ["esrgan", "edsr"]:
             return input_blob_name
         else:
             return input_blob_name,bicinput_blob_name
@@ -117,14 +117,16 @@ class SuperResolution(Model):
 
         output_size = output_blob.shape
         if len(output_size) != 4:
-            raise Exception("Unexpected output blob shape {}. Only 4D output blob is supported".format(output_size))
+            raise Exception(
+                f"Unexpected output blob shape {output_size}. Only 4D output blob is supported"
+            )
 
         return output_blob_name
 
     def preprocess(self, inputs):
         image = inputs
         input_num = len(self.net.input_info)
-    
+
         if self.model_name == "edsr":
             image = np.expand_dims(image, axis=-1)
 
@@ -136,7 +138,7 @@ class SuperResolution(Model):
             resized_image = image
 
         if input_num == 2:
-            
+
             bicinput_blob = self.net.input_info[self.bicinput_blob_name]
             bicinput_size = bicinput_blob.input_data.shape
             width = bicinput_size[3]
@@ -144,22 +146,22 @@ class SuperResolution(Model):
             resized_image_bic = cv2.resize(image, (width, ht))
             resized_image_bic = resized_image_bic.transpose((2, 0, 1))
             resized_image_bic = np.expand_dims(resized_image_bic, 0)
-        
- 
+
+
         resized_image= resized_image.astype(np.float32)
         #print("resssimage------",resized_image[0][0])
         if self.model_name == "esrgan":
             resized_image = resized_image / 255.0 # for esrgan
-    
+
         resized_image = resized_image.transpose((2, 0, 1))
         resized_image = np.expand_dims(resized_image, 0)
         #print("resized_image",resized_image.shape)
 
-        if self.model_name == "esrgan" or self.model_name == "edsr":
+        if self.model_name in ["esrgan", "edsr"]:
             dict_inputs = {self.input_blob_name: resized_image}
         else:
             dict_inputs = {self.input_blob_name: resized_image , self.bicinput_blob_name: resized_image_bic.astype(np.float32)} 
-     
+
         return dict_inputs, image.shape[1::-1]
 
     def postprocess(self, outputs, dsize):

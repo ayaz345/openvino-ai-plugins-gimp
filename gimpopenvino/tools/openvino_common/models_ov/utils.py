@@ -38,8 +38,7 @@ class DetectionWithLandmarks(Detection):
     def __init__(self, xmin, ymin, xmax, ymax, score, id, landmarks_x, landmarks_y):
         super().__init__(xmin, ymin, xmax, ymax, score, id)
         self.landmarks = []
-        for x, y in zip(landmarks_x, landmarks_y):
-            self.landmarks.append((x, y))
+        self.landmarks.extend((x, y) for x, y in zip(landmarks_x, landmarks_y))
 
 
 class OutputTransform:
@@ -93,16 +92,14 @@ def load_labels(label_file):
 
 def resize_image(image, size, keep_aspect_ratio=False):
     if not keep_aspect_ratio:
-        resized_frame = cv2.resize(image, size)
-    else:
-        h, w = image.shape[:2]
-        scale = min(size[1] / h, size[0] / w)
-        resized_frame = cv2.resize(image, None, fx=scale, fy=scale)
-    return resized_frame
+        return cv2.resize(image, size)
+    h, w = image.shape[:2]
+    scale = min(size[1] / h, size[0] / w)
+    return cv2.resize(image, None, fx=scale, fy=scale)
 
 
 def resize_image_letterbox(image, size):
-    ih, iw = image.shape[0:2]
+    ih, iw = image.shape[:2]
     w, h = size
     scale = min(w / iw, h / ih)
     nw = int(iw * scale)
@@ -110,9 +107,12 @@ def resize_image_letterbox(image, size):
     image = cv2.resize(image, (nw, nh))
     dx = (w - nw) // 2
     dy = (h - nh) // 2
-    resized_image = np.pad(image, ((dy, dy + (h - nh) % 2), (dx, dx + (w - nw) % 2), (0, 0)),
-                           mode='constant', constant_values=128)
-    return resized_image
+    return np.pad(
+        image,
+        ((dy, dy + (h - nh) % 2), (dx, dx + (w - nw) % 2), (0, 0)),
+        mode='constant',
+        constant_values=128,
+    )
 
 
 def nms(x1, y1, x2, y2, scores, thresh, include_boundaries=False, keep_top_k=None):

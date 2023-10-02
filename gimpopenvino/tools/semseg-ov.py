@@ -21,20 +21,21 @@ def get_seg(input_image, model_name="deeplabv3", device="CPU", weight_path=None)
     if weight_path is None:
         weight_path = get_weight_path()
 
-    if model_name == "deeplabv3": 
-        out = run(
-                input_image, 
-                os.path.join(weight_path, "semseg-ov", "deeplabv3.xml"),  
-                device,
-            )
-    else:
-        out = run(
-                input_image, 
-                os.path.join(weight_path, "semseg-ov", "semantic-segmentation-adas-0001.xml"),
-                device,
-            )
-
-    return out
+    return (
+        run(
+            input_image,
+            os.path.join(weight_path, "semseg-ov", "deeplabv3.xml"),
+            device,
+        )
+        if model_name == "deeplabv3"
+        else run(
+            input_image,
+            os.path.join(
+                weight_path, "semseg-ov", "semantic-segmentation-adas-0001.xml"
+            ),
+            device,
+        )
+    )
 
 
 if __name__ == "__main__":

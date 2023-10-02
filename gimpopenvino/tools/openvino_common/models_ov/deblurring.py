@@ -63,7 +63,9 @@ class Deblurring(Model):
 
         output_size = output_blob.shape
         if len(output_size) != 4:
-            raise Exception("Unexpected output blob shape {}. Only 4D output blob is supported".format(output_size))
+            raise Exception(
+                f"Unexpected output blob shape {output_size}. Only 4D output blob is supported"
+            )
 
         return output_blob_name
 

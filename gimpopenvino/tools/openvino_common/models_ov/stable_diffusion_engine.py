@@ -98,9 +98,7 @@ class StableDiffusionEngine:
         # normalize
         image = image.astype(np.float32) / 255.0
         image = 2.0 * image - 1.0
-        # to batch
-        image = image[None].transpose(0, 3, 1, 2)
-        return image
+        return image[None].transpose(0, 3, 1, 2)
 
     def _encode_image(self, init_image):
         moments = result(self.vae_encoder.infer_new_request({
@@ -108,8 +106,7 @@ class StableDiffusionEngine:
         }))
         mean, logvar = np.split(moments, 2, axis=1)
         std = np.exp(logvar * 0.5)
-        latent = (mean + std * np.random.randn(*mean.shape)) * 0.18215
-        return latent
+        return (mean + std * np.random.randn(*mean.shape)) * 0.18215
 
     def __call__(
             self,
@@ -137,12 +134,8 @@ class StableDiffusionEngine:
 
         # do classifier free guidance
         if guidance_scale > 1.0:
-        
-            if negative_prompt is None:
-                uncond_tokens = ""
-            else:       
-                uncond_tokens = negative_prompt
-                
+
+            uncond_tokens = "" if negative_prompt is None else negative_prompt
             tokens_uncond = self.tokenizer(
                 uncond_tokens,
                 padding="max_length",
@@ -195,10 +188,10 @@ class StableDiffusionEngine:
             extra_step_kwargs["eta"] = eta
 
         t_start = max(num_inference_steps - init_timestep + offset, 0)
-        
+
         if create_gif:
             frames = []
-        
+
         for i, t in tqdm(enumerate(self.scheduler.timesteps[t_start:])):
             # expand the latents if we are doing classifier free guidance
             latent_model_input = np.stack([latents, latents], 0) if guidance_scale > 1.0 else latents[None]
@@ -246,11 +239,11 @@ class StableDiffusionEngine:
                 "latents": np.expand_dims(frames[i], 0)}))
                 image = (image / 2 + 0.5).clip(0, 1)
                 image = (image[0].transpose(1, 2, 0)[:, :, ::-1] * 255).astype(np.uint8)
-                output = gif_folder + "/" + str(i).zfill(3) +".png"
+                output = f"{gif_folder}/{str(i).zfill(3)}.png"
                 cv2.imwrite(output, image)
             with open(os.path.join(gif_folder, "prompt.json"), "w") as file:
                 json.dump({"prompt": prompt}, file)
-            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]  
+            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]
             frame_one = frames_image[0]
             gif_file=os.path.join(gif_folder,"stable_diffusion.gif")
             frame_one.save(gif_file, format="GIF", append_images=frames_image, save_all=True, duration=100, loop=0)

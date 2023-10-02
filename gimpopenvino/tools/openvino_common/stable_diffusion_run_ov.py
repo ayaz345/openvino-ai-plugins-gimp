@@ -49,26 +49,26 @@ log = logging.getLogger()
 def run(device,prompt,negative_prompt,num_infer_steps,guidance_scale,init_image,strength,seed,create_gif,scheduler,model_path): #model_path):model_name
      
      weight_path = get_weight_path()
- 
+
      log.info('Initializing Inference Engine...')
      if seed is not None:   
-        np.random.seed(int(seed))
-        log.info('Seed: %s',seed)
+          np.random.seed(int(seed))
+          log.info('Seed: %s',seed)
      else:
-        ran_seed = random.randrange(4294967294) #4294967294 
-        np.random.seed(int(ran_seed))
-        log.info('Random Seed: %s',ran_seed)
-        
-   
-        
-  
+          ran_seed = random.randrange(4294967294) #4294967294 
+          np.random.seed(ran_seed)
+          log.info('Random Seed: %s',ran_seed)
+
+
+
+
      if scheduler == "LMSDiscreteScheduler":
          log.info('LMSDiscreteScheduler...')
          scheduler = LMSDiscreteScheduler(
                 beta_start=0.00085,
                 beta_end=0.012,
                 beta_schedule="scaled_linear",
-                
+
             )
      elif scheduler == "PNDMScheduler":
         log.info('PNDMScheduler...')
@@ -78,9 +78,9 @@ def run(device,prompt,negative_prompt,num_infer_steps,guidance_scale,init_image,
             beta_end=0.012,
             beta_schedule="scaled_linear",
             skip_prk_steps = True,
-            
+
         ) 
-      
+
      else:
          log.info('EulerDiscreteScheduler...')
          scheduler = EulerDiscreteScheduler(
@@ -92,11 +92,11 @@ def run(device,prompt,negative_prompt,num_infer_steps,guidance_scale,init_image,
 
      print("weight_path in run ",model_path)
      log.info('Device: %s',device)
-     engine = StableDiffusionEngine(
-        model = model_path,
-        scheduler = scheduler,
-        device = device
-    )
+      engine = StableDiffusionEngine(
+         model = model_path,
+         scheduler = scheduler,
+         device = device
+     )
      strength = 1.0 if init_image is None else strength
      log.info('Starting inference...')
      log.info('Prompt: %s',prompt)
@@ -106,23 +106,19 @@ def run(device,prompt,negative_prompt,num_infer_steps,guidance_scale,init_image,
      log.info('strength: %s',strength)
      log.info('init_image: %s',init_image)
 
-     image = engine(
-        prompt = prompt,
-        negative_prompt = negative_prompt,
-        init_image = None if init_image is None else Image.open(init_image), #cv2.imread(init_image),
-        mask = None, 
-        strength = strength,
-        num_inference_steps = num_infer_steps,
-        guidance_scale = guidance_scale,
-        eta = 0.0,
-        create_gif = bool(create_gif),
-        model = model_path
-    )  
-
-
-
-        
-     return image
+     return engine(
+         prompt=prompt,
+         negative_prompt=negative_prompt,
+         init_image=None if init_image is None else
+         Image.open(init_image),  # cv2.imread(init_image),
+         mask=None,
+         strength=strength,
+         num_inference_steps=num_infer_steps,
+         guidance_scale=guidance_scale,
+         eta=0.0,
+         create_gif=bool(create_gif),
+         model=model_path,
+     )
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ class CTPN(Model):
         self.h1, self.w1 = self.ctpn_keep_aspect_ratio(1200, 600, input_size[1], input_size[0])
         self.h2, self.w2 = self.ctpn_keep_aspect_ratio(600, 600, self.w1, self.h1)
         input_shape = {self.image_blob_name: (1, 3, self.h2, self.w2)}
-        self.logger.info('Reshape net to {}'.format(input_shape))
+        self.logger.info(f'Reshape net to {input_shape}')
         self.net.reshape(input_shape)
 
     def prepare_inputs(self):
@@ -266,9 +266,11 @@ class TextProposalGraphBuilder:
         results = []
         for left in range(int(box[0]) + 1, min(int(box[0]) + 50 + 1, self.im_size[1])):
             adj_box_indices = self.boxes_table[left]
-            for adj_box_index in adj_box_indices:
-                if self.meet_v_iou(adj_box_index, index):
-                    results.append(adj_box_index)
+            results.extend(
+                adj_box_index
+                for adj_box_index in adj_box_indices
+                if self.meet_v_iou(adj_box_index, index)
+            )
             if results:
                 return results
         return results
@@ -278,9 +280,11 @@ class TextProposalGraphBuilder:
         results = []
         for left in range(int(box[0]) - 1, max(int(box[0] - 50), 0) - 1, -1):
             adj_box_indices = self.boxes_table[left]
-            for adj_box_index in adj_box_indices:
-                if self.meet_v_iou(adj_box_index, index):
-                    results.append(adj_box_index)
+            results.extend(
+                adj_box_index
+                for adj_box_index in adj_box_indices
+                if self.meet_v_iou(adj_box_index, index)
+            )
             if results:
                 return results
         return results
