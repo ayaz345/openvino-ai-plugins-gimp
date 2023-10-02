@@ -96,8 +96,6 @@ def superresolution(procedure, image, drawable,scale, device_name, model_name, p
 
     save_image(image, drawable, os.path.join(weight_path, "..", "cache.png"))
 
-    #with open(os.path.join(weight_path, "..", "gimp_openvino_run.pkl"), "wb") as file:
-     #   pickle.dump({"device_name": device_name, "scale": float(scale),"model_name": model_name, "inference_status": "started"}, file)
     with open(os.path.join(weight_path, "..", "gimp_openvino_run.json"), "w") as file:
         json.dump({"device_name": device_name, "scale": float(scale), "model_name": model_name, "inference_status": "started"}, file)
 
@@ -153,8 +151,6 @@ def superresolution(procedure, image, drawable,scale, device_name, model_name, p
             if f_name.startswith("cache"):
                 os.remove(os.path.join(my_dir, f_name))
 
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
-
     else:
         show_dialog(
             "Inference not successful. See error_log.txt in GIMP-OpenVINO folder.",
@@ -162,7 +158,8 @@ def superresolution(procedure, image, drawable,scale, device_name, model_name, p
             "error",
             image_paths
         )
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
+    return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
 
 
 def run(procedure, run_mode, image, n_drawables, layer, args, data):

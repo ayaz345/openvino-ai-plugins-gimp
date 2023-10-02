@@ -22,17 +22,24 @@ def get_sb(device="CPU", prompt="northern lights", negative_prompt=None,  num_in
     weight_path = get_weight_path()
 
     print("model_name in run ",model_name)
-    if model_name == "SD_1.4":
+    if model_name == "SD_1.4" or model_name != "SD_1.5":
         model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.4")
-    elif model_name == "SD_1.5":
-        model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.5")
     else:
-        model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.4")
-
-
+        model_path = os.path.join(weight_path, "stable-diffusion-ov/stable-diffusion-1.5")
     print("weight_path in run1 ",model_path)
-    out = run(device, prompt,negative_prompt, num_infer_steps,guidance_scale, init_image, strength, seed, create_gif,scheduler, model_path)
-    return out
+    return run(
+        device,
+        prompt,
+        negative_prompt,
+        num_infer_steps,
+        guidance_scale,
+        init_image,
+        strength,
+        seed,
+        create_gif,
+        scheduler,
+        model_path,
+    )
 
 
 if __name__ == "__main__":

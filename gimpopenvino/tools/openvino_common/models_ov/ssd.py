@@ -43,8 +43,9 @@ class SSD(Model):
             elif len(blob.input_data.shape) == 2:
                 image_info_blob_name = blob_name
             else:
-                raise RuntimeError('Unsupported {}D input layer "{}". Only 2D and 4D input layers are supported'
-                                   .format(len(blob.shape), blob_name))
+                raise RuntimeError(
+                    f'Unsupported {len(blob.shape)}D input layer "{blob_name}". Only 2D and 4D input layers are supported'
+                )
         if image_blob_name is None:
             raise RuntimeError('Failed to identify the input for the image.')
         return image_blob_name, image_info_blob_name
@@ -109,10 +110,10 @@ class SSD(Model):
 def find_layer_by_name(name, layers):
     suitable_layers = [layer_name for layer_name in layers if name in layer_name]
     if not suitable_layers:
-        raise ValueError('Suitable layer for "{}" output is not found'.format(name))
+        raise ValueError(f'Suitable layer for "{name}" output is not found')
 
     if len(suitable_layers) > 1:
-        raise ValueError('More than 1 layer matched to "{}" output'.format(name))
+        raise ValueError(f'More than 1 layer matched to "{name}" output')
 
     return suitable_layers[0]
 
@@ -124,8 +125,9 @@ class SingleOutputParser:
         self.output_name, output_data = next(iter(all_outputs.items()))
         last_dim = np.shape(output_data)[-1]
         if last_dim != 7:
-            raise ValueError('The last dimension of the output blob must be equal to 7, '
-                             'got {} instead.'.format(last_dim))
+            raise ValueError(
+                f'The last dimension of the output blob must be equal to 7, got {last_dim} instead.'
+            )
 
     def __call__(self, outputs):
         return [Detection(xmin, ymin, xmax, ymax, score, label)
@@ -176,5 +178,7 @@ class BoxesLabelsParser:
         else:
             labels = np.full(len(bboxes), self.default_label, dtype=bboxes.dtype)
 
-        detections = [Detection(*bbox, score, label) for label, score, bbox in zip(labels, scores, bboxes)]
-        return detections
+        return [
+            Detection(*bbox, score, label)
+            for label, score, bbox in zip(labels, scores, bboxes)
+        ]

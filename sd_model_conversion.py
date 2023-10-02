@@ -201,21 +201,20 @@ def convert_unet_onnx(unet:pipeline_name, onnx_path:Path):
 
 
 if not UNET_OV_PATH.exists():
-    convert_unet_onnx(unet, UNET_ONNX_PATH)
-    del unet
-    gc.collect()
-   
-    try:
-        unet_model = mo.convert_model(UNET_ONNX_PATH, compress_to_fp16=True)
-        serialize(unet_model, xml_path=os.path.join(weight_path, 'unet.xml'))
-    except:
-        subprocess.call([sd_mo_path, '--input_model', UNET_ONNX_PATH, '--data_type=FP16', '--output_dir', weight_path]) 
-       
-    
-    print('Unet successfully converted to IR')
+	convert_unet_onnx(unet, UNET_ONNX_PATH)
+	gc.collect()
+
+	try:
+	    unet_model = mo.convert_model(UNET_ONNX_PATH, compress_to_fp16=True)
+	    serialize(unet_model, xml_path=os.path.join(weight_path, 'unet.xml'))
+	except:
+	    subprocess.call([sd_mo_path, '--input_model', UNET_ONNX_PATH, '--data_type=FP16', '--output_dir', weight_path]) 
+
+
+	print('Unet successfully converted to IR')
 else:
-    del unet
-    print(f"Unet will be loaded from {UNET_OV_PATH}")
+	print(f"Unet will be loaded from {UNET_OV_PATH}")
+del unet
 gc.collect()
 
 VAE_ENCODER_ONNX_PATH = Path(weight_path) / 'vae_encoder.onnx'
@@ -223,7 +222,7 @@ VAE_ENCODER_OV_PATH = Path(weight_path) / 'vae_encoder.xml'
 
 
 def convert_vae_encoder_onnx(vae: pipeline_name, onnx_path: Path):
-    """
+	"""
     Convert VAE model to ONNX, then IR format. 
     Function accepts pipeline, creates wrapper class for export only necessary for inference part, 
     prepares example inputs for ONNX conversion via torch.export, 
@@ -233,24 +232,26 @@ def convert_vae_encoder_onnx(vae: pipeline_name, onnx_path: Path):
     Returns:
         None
     """
-    class VAEEncoderWrapper(torch.nn.Module):
-        def __init__(self, vae):
-            super().__init__()
-            self.vae = vae
 
-        def forward(self, image):
-            h = self.vae.encoder(image)
-            moments = self.vae.quant_conv(h)
-            return moments
 
-    if not onnx_path.exists():
-        vae_encoder = VAEEncoderWrapper(vae)
-        vae_encoder.eval()
-        image = torch.zeros((1, 3, ht, wt))
-        with torch.no_grad():
-            torch.onnx.export(vae_encoder, image, onnx_path, input_names=[
-                              'init_image'], output_names=['image_latent'])
-        print('VAE encoder successfully converted to ONNX')
+	class VAEEncoderWrapper(torch.nn.Module):
+		def __init__(self, vae):
+		    super().__init__()
+		    self.vae = vae
+
+		def forward(self, image):
+			h = self.vae.encoder(image)
+			return self.vae.quant_conv(h)
+
+
+	if not onnx_path.exists():
+	    vae_encoder = VAEEncoderWrapper(vae)
+	    vae_encoder.eval()
+	    image = torch.zeros((1, 3, ht, wt))
+	    with torch.no_grad():
+	        torch.onnx.export(vae_encoder, image, onnx_path, input_names=[
+	                          'init_image'], output_names=['image_latent'])
+	    print('VAE encoder successfully converted to ONNX')
 
 
 if not VAE_ENCODER_OV_PATH.exists():

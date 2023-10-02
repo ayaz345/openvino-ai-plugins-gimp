@@ -96,7 +96,11 @@ def inpainting(
     image.undo_group_start()
 
     for index, drawable in enumerate(drawables):
-        save_image(image, [drawable], os.path.join(weight_path,  "..", "cache" + str(index) + ".png"))
+        save_image(
+            image,
+            [drawable],
+            os.path.join(weight_path, "..", f"cache{str(index)}.png"),
+        )
 
     with open(os.path.join(weight_path, "..", "gimp_openvino_run.json"), "w") as file:
         json.dump(
@@ -138,8 +142,6 @@ def inpainting(
             if f_name.startswith("cache"):
                 os.remove(os.path.join(my_dir, f_name))
 
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
-
     else:
         show_dialog(
             "Inference not successful. See error_log.txt in GIMP-OpenVINO folder.",
@@ -147,7 +149,8 @@ def inpainting(
             "error",
             image_paths
         )
-        return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
+    return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
 
 
 def run(procedure, run_mode, image, n_drawables, layer, args, data):

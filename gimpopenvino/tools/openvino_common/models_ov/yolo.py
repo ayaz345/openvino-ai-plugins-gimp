@@ -43,8 +43,7 @@ class YOLO(Model):
 
             self.isYoloV3 = False
 
-            mask = param.get('mask', None)
-            if mask:
+            if mask := param.get('mask', None):
                 self.num = len(mask)
 
                 masked_anchors = []
@@ -165,9 +164,7 @@ class YOLO(Model):
             box_1_area = (box_1.ymax - box_1.ymin) * (box_1.xmax - box_1.xmin)
             box_2_area = (box_2.ymax - box_2.ymin) * (box_2.xmax - box_2.xmin)
             area_of_union = box_1_area + box_2_area - area_of_overlap
-            if area_of_union == 0:
-                return 0
-            return area_of_overlap / area_of_union
+            return 0 if area_of_union == 0 else area_of_overlap / area_of_union
 
         detections = sorted(detections, key=lambda obj: obj.score, reverse=True)
         for i in range(len(detections)):
@@ -256,7 +253,7 @@ class YoloV4(YOLO):
             shape = layer.shape
             classes = shape[1] // num - 5
             if shape[1] % num != 0:
-                raise RuntimeError("The output blob {} has wrong 2nd dimension".format(name))
+                raise RuntimeError(f"The output blob {name} has wrong 2nd dimension")
             yolo_params = self.Params(classes, num, shape[2:4], self.anchors, self.masks[i*num : (i+1)*num])
             output_info[name] = (shape, yolo_params)
         return output_info

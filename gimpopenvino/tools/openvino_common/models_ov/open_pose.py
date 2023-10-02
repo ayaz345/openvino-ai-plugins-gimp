@@ -76,7 +76,7 @@ class OpenPose(Model):
         self.w = (input_width + size_divisor - 1) // size_divisor * size_divisor
         default_input_shape = self.net.input_info[self.image_blob_name].input_data.shape
         input_shape = {self.image_blob_name: (default_input_shape[:-2] + [self.h, self.w])}
-        self.logger.info('Reshape net to {}'.format(input_shape))
+        self.logger.info(f'Reshape net to {input_shape}')
         self.net.reshape(input_shape)
 
         num_joints = self.net.outputs[self.heatmaps_blob_name].shape[1] - 1  # The last channel is for background
@@ -90,8 +90,9 @@ class OpenPose(Model):
             if len(blob.input_data.shape) == 4:
                 image_blob_name = blob_name
             else:
-                raise RuntimeError('Unsupported {}D input layer "{}". Only 2D and 4D input layers are supported'
-                                   .format(len(blob.shape), blob_name))
+                raise RuntimeError(
+                    f'Unsupported {len(blob.shape)}D input layer "{blob_name}". Only 2D and 4D input layers are supported'
+                )
         if image_blob_name is None:
             raise RuntimeError('Failed to identify the input for the image.')
         return image_blob_name
@@ -256,7 +257,7 @@ class OpenPoseDecoder:
                 pose_entry[kpt_a_id] = connection[0]
                 pose_entry[kpt_b_id] = connection[1]
                 pose_entry[-1] = 2
-                pose_entry[-2] = np.sum(all_keypoints[connection[0:2], 2]) + connection[2]
+                pose_entry[-2] = np.sum(all_keypoints[connection[:2], 2]) + connection[2]
                 pose_entries.append(pose_entry)
             elif pose_a_idx >= 0 and pose_b_idx >= 0 and pose_a_idx != pose_b_idx:
                 # Merge two poses are disjoint merge them, otherwise ignore connection.
@@ -278,7 +279,7 @@ class OpenPoseDecoder:
                 pose[kpt_b_id] = connection[1]
                 pose[-2] += connection[2]
                 pose[-1] += 1
-            elif pose_b_idx >= 0:
+            else:
                 # Add a new limb into pose.
                 pose = pose_entries[pose_b_idx]
                 if pose[kpt_a_id] < 0:
@@ -352,15 +353,16 @@ class OpenPoseDecoder:
 
             # Suppress incompatible connections.
             a_idx, b_idx, affinity_scores = self.connections_nms(a_idx, b_idx, affinity_scores)
-            connections = list(zip(kpts_a[a_idx, 3].astype(np.int32),
-                                   kpts_b[b_idx, 3].astype(np.int32),
-                                   affinity_scores))
-            if len(connections) == 0:
-                continue
-
-            # Update poses with new connections.
-            pose_entries = self.update_poses(kpt_a_id, kpt_b_id, all_keypoints,
-                                             connections, pose_entries, pose_entry_size)
+            if connections := list(
+                zip(
+                    kpts_a[a_idx, 3].astype(np.int32),
+                    kpts_b[b_idx, 3].astype(np.int32),
+                    affinity_scores,
+                )
+            ):
+                # Update poses with new connections.
+                pose_entries = self.update_poses(kpt_a_id, kpt_b_id, all_keypoints,
+                                                 connections, pose_entries, pose_entry_size)
 
         # Remove poses with not enough points.
         pose_entries = np.asarray(pose_entries, dtype=np.float32).reshape(-1, pose_entry_size)

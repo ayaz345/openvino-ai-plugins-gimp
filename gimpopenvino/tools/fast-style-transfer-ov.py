@@ -18,7 +18,7 @@ import numpy as np
 def get_style(img, model_name="mosaic", weight_path=None,device="CPU"):
     if weight_path is None:
         weight_path = get_weight_path()
-    
+
     if model_name == "mosaic":
         model_path = os.path.join(weight_path, "fast-style-transfer-ov", "mosaic-8/fast-neural-style-mosaic-onnx.xml")
     elif model_name == "candy":
@@ -30,8 +30,7 @@ def get_style(img, model_name="mosaic", weight_path=None,device="CPU"):
     else:
         model_path = os.path.join(weight_path, "fast-style-transfer-ov", "udnie-8/fast-neural-style-rain-udnie8-onnx.xml")
 
-    out = run(img, model_path, device)       
-    return out
+    return run(img, model_path, device)
 
 
 if __name__ == "__main__":

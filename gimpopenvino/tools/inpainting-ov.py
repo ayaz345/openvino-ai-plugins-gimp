@@ -21,8 +21,12 @@ import traceback
 def get_inpaint(images, masks, device, weight_path=None):
     if weight_path is None:
         weight_path = get_weight_path()
-    out = InpaintingGUI(images, masks, os.path.join(weight_path, "inpainting-ov", "gmcnn-places2-tf.xml"), device).run()
-    return out
+    return InpaintingGUI(
+        images,
+        masks,
+        os.path.join(weight_path, "inpainting-ov", "gmcnn-places2-tf.xml"),
+        device,
+    ).run()
 
 
 if __name__ == "__main__":

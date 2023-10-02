@@ -12,9 +12,7 @@ def get_weight_path():
     with open(os.path.join(config_path, "gimp_openvino_config.json"), "r") as file:
         data = json.load(file)
 
-    weight_path=data["weight_path"]
-
-    return weight_path
+    return data["weight_path"]
 
 
 

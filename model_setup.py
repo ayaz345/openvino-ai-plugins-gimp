@@ -16,7 +16,7 @@ for folder in os.scandir(src_dir):
     model = os.path.basename(folder)
     model_path = os.path.join(other_models, model)
     if not os.path.isdir(model_path):
-        print("Copying {} to {}".format(model, other_models))
+        print(f"Copying {model} to {other_models}")
         shutil.copytree(Path(folder), model_path)
 
 print("Setup done for superresolution, semantic-segmentation, style-transfer, in-painting") 
@@ -25,25 +25,25 @@ print("**** OPENVINO STABLE DIFFUSION 1.4 MODEL SETUP ****")
 
 while True:
 
-	choice = input("Do you want to download openvino stable-diffusion-1.4 model? Enter Y/N: ")
+    choice = input("Do you want to download openvino stable-diffusion-1.4 model? Enter Y/N: ")
 
 
-	if choice == "Y" or choice == "y":
+    if choice in ["Y", "y"]:
 
-		install_location = os.path.join(os.path.expanduser("~"), "openvino-ai-plugins-gimp")
-		SD_path = os.path.join(install_location, "weights", "stable-diffusion-ov", "stable-diffusion-1.4")
+        install_location = os.path.join(os.path.expanduser("~"), "openvino-ai-plugins-gimp")
+        SD_path = os.path.join(install_location, "weights", "stable-diffusion-ov", "stable-diffusion-1.4")
 
-		if os.path.isdir(SD_path):
-			 shutil.rmtree(SD_path)
+        if os.path.isdir(SD_path):
+        	 shutil.rmtree(SD_path)
 
-		repo_id="bes-dev/stable-diffusion-v1-4-openvino"
-		download_folder = snapshot_download(repo_id=repo_id, allow_patterns=["*.xml" ,"*.bin"])
-		print("download_folder", download_folder)
-		shutil.copytree(download_folder, SD_path)
-		break
-	elif choice == "N" or choice == "n" or choice == "":
-            print("Skipping stable-diffusion-1.4 model setup...") 
-            sys.exit()
-	else:
-		print("Wrong option entered")
+        repo_id="bes-dev/stable-diffusion-v1-4-openvino"
+        download_folder = snapshot_download(repo_id=repo_id, allow_patterns=["*.xml" ,"*.bin"])
+        print("download_folder", download_folder)
+        shutil.copytree(download_folder, SD_path)
+        break
+    elif choice in ["N", "n", ""]:
+        print("Skipping stable-diffusion-1.4 model setup...") 
+        sys.exit()
+    else:
+        print("Wrong option entered")
 	

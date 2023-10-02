@@ -151,9 +151,7 @@ def randn_tensor(
     Returns:
       latents (np.ndarray): tensor with random values with given data type and shape (usually represents noise in latent space)
     """
-    latents = np.random.randn(*shape).astype(dtype)
-
-    return latents
+    return np.random.randn(*shape).astype(dtype)
 
 class ControlNetOpenPose(DiffusionPipeline):
     def __init__(
@@ -543,46 +541,46 @@ class ControlNetOpenPose(DiffusionPipeline):
 if __name__ == "__main__":
     #from gimpopenvino.tools.tools_utils import get_weight_path
     weight_path = "C:\\Users\\lab_admin\\openvino-ai-plugins-gimp\\weights"
-    
+
     model_path = os.path.join(weight_path, "stable-diffusion-ov/controlnet-openpose")  #os.path.join(weight_path, "stable-diffusion-ov/controlnet-openpose")  -- "D:\\git\\openvino_notebooks\\notebooks\\235-controlnet-stable-diffusion"
     device_name = ["GPU.1", "GPU.1" , "GPU.1"]
-    
+
     prompt = "Dancing Darth Vader, best quality, extremely detailed"
     negative_prompt = "monochrome, lowres, bad anatomy, worst quality, low quality"
     seed = 42
     num_infer_steps = 20
     guidance_scale = 7.5
     init_image = "C:\\Users\\lab_admin\\Downloads\\224540208-c172c92a-9714-4a7b-857a-b1e54b4d4791.jpg"
-    
-    
-    
+
+
+
     if seed is not None:   
-        np.random.seed(int(seed))
+        np.random.seed(seed)
     else:
         ran_seed = random.randrange(4294967294) #4294967294 
-        np.random.seed(int(ran_seed))
-       
-    
+        np.random.seed(ran_seed)
+               
+
     engine = ControlNetOpenPose(
         model = model_path,
         device = device_name
     )
-    
 
-    
-    output = engine(
-    prompt = prompt,
-    negative_prompt = negative_prompt,
-    image = Image.open(init_image),
 
-    num_inference_steps = num_infer_steps,
-    guidance_scale = guidance_scale,
-    eta = 0.0,
-    create_gif = False,
-    model = model_path,
-    callback = None,
-    callback_userdata = None
-)
+
+        output = engine(
+        prompt = prompt,
+        negative_prompt = negative_prompt,
+        image = Image.open(init_image),
+
+        num_inference_steps = num_infer_steps,
+        guidance_scale = guidance_scale,
+        eta = 0.0,
+        create_gif = False,
+        model = model_path,
+        callback = None,
+        callback_userdata = None
+    )
     
 
     

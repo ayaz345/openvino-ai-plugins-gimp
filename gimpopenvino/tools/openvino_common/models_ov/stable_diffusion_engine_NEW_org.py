@@ -155,14 +155,14 @@ class StableDiffusionEngine(DiffusionPipeline):
         # do classifier free guidance
         do_classifier_free_guidance = guidance_scale > 1.0
         if do_classifier_free_guidance:
-        
+
             if negative_prompt is None:
                 uncond_tokens = [""]
             elif isinstance(negative_prompt, str):
                 uncond_tokens = [negative_prompt]
             else:
                 uncond_tokens = negative_prompt
-                
+
             tokens_uncond = self.tokenizer(
                 uncond_tokens,
                 padding="max_length",
@@ -175,7 +175,7 @@ class StableDiffusionEngine(DiffusionPipeline):
         # set timesteps
         accepts_offset = "offset" in set(inspect.signature(self.scheduler.set_timesteps).parameters.keys())
         extra_set_kwargs = {}
-        
+
         if accepts_offset:
             extra_set_kwargs["offset"] = 1
 
@@ -214,16 +214,16 @@ class StableDiffusionEngine(DiffusionPipeline):
 
             # compute the previous noisy sample x_t -> x_t-1
             latents = self.scheduler.step(torch.from_numpy(noise_pred), t, torch.from_numpy(latents), **extra_step_kwargs)["prev_sample"].numpy()
-     
+
             if create_gif:
                 frames.append(latents)
-              
+
 
 
         # scale and decode the image latents with vae
-        
+
         image = self.vae_decoder(latents)[self._vae_d_output]
-      
+
         image = self.postprocess_image(image, meta)
 
         if create_gif:
@@ -233,11 +233,11 @@ class StableDiffusionEngine(DiffusionPipeline):
             for i in range(0,len(frames)):
                 image = self.vae_decoder(frames[i])[self._vae_d_output]
                 image = self.postprocess_image(image, meta)
-                output = gif_folder + "/" + str(i).zfill(3) +".png"
+                output = f"{gif_folder}/{str(i).zfill(3)}.png"
                 cv2.imwrite(output, image)
             with open(os.path.join(gif_folder, "prompt.json"), "w") as file:
                 json.dump({"prompt": prompt}, file)
-            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]  
+            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]
             frame_one = frames_image[0]
             gif_file=os.path.join(gif_folder,"stable_diffusion.gif")
             frame_one.save(gif_file, format="GIF", append_images=frames_image, save_all=True, duration=100, loop=0)
@@ -258,25 +258,22 @@ class StableDiffusionEngine(DiffusionPipeline):
                 Image encoded in latent space
         """
         latents_shape = (1, 4, self.height // 8, self.width // 8)
-   
+
         noise = np.random.randn(*latents_shape).astype(np.float32)
         if image is None:
-      
+          
             # if we use LMSDiscreteScheduler, let's make sure latents are mulitplied by sigmas
             if isinstance(self.scheduler, LMSDiscreteScheduler):
-       
+               
                 noise = noise * self.scheduler.sigmas[0].numpy()
-                return noise, {}
             elif isinstance(self.scheduler, EulerDiscreteScheduler):
-   
+               
                 noise = noise * self.scheduler.sigmas.max().numpy()
-                return noise, {}
-            else:
-                return noise, {}
+            return noise, {}
         input_image, meta = preprocess(image)
 
         moments = self.vae_encoder(input_image)[self._vae_e_output]
-        mean, logvar = np.split(moments, 2, axis=1) 
+        mean, logvar = np.split(moments, 2, axis=1)
         std = np.exp(logvar * 0.5)
         latents = (mean + std * np.random.randn(*mean.shape)) * 0.18215
         latents = self.scheduler.add_noise(torch.from_numpy(latents), torch.from_numpy(noise), latent_timestep).numpy()

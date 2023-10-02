@@ -80,16 +80,8 @@ def prepare_mask_and_masked_image(image, mask, height, width, return_image: bool
         if mask.ndim == 2:
             mask = mask.unsqueeze(0).unsqueeze(0)
 
-        # Batch single mask or add channel dim
         if mask.ndim == 3:
-            # Single batched mask, no channel dim or single mask not batched but channel dim
-            if mask.shape[0] == 1:
-                mask = mask.unsqueeze(0)
-
-            # Batched masks no channel dim
-            else:
-                mask = mask.unsqueeze(1)
-
+            mask = mask.unsqueeze(0) if mask.shape[0] == 1 else mask.unsqueeze(1)
         assert image.ndim == 4 and mask.ndim == 4, "Image and Mask must have 4 dimensions"
         assert image.shape[-2:] == mask.shape[-2:], "Image and Mask must have the same spatial dimensions"
         assert image.shape[0] == mask.shape[0], "Image and Mask must have the same batch size"
@@ -108,37 +100,39 @@ def prepare_mask_and_masked_image(image, mask, height, width, return_image: bool
 
         # Image as float32
         image = image.to(dtype=torch.float32)       
-        
+
     elif isinstance(mask, torch.Tensor):
         raise TypeError(f"`mask` is a torch.Tensor but `image` (type: {type(image)} is not")
     else:
-    
+
         # preprocess image
         if isinstance(image, (PIL.Image.Image, np.ndarray)):
             image = [image]
-        if isinstance(image, list) and isinstance(image[0], PIL.Image.Image):
-            # resize all images w.r.t passed height an width
-            
-            image = [i.resize((width, height), resample=PIL.Image.LANCZOS) for i in image]
-            image = [np.array(i.convert("RGB"))[None, :] for i in image]
-            image = np.concatenate(image, axis=0)
-        elif isinstance(image, list) and isinstance(image[0], np.ndarray):
-            image = np.concatenate([i[None, :] for i in image], axis=0)
-        
+        if isinstance(image, list):
+            if isinstance(image[0], PIL.Image.Image):
+                # resize all images w.r.t passed height an width
+
+                image = [i.resize((width, height), resample=PIL.Image.LANCZOS) for i in image]
+                image = [np.array(i.convert("RGB"))[None, :] for i in image]
+                image = np.concatenate(image, axis=0)
+            elif isinstance(image[0], np.ndarray):
+                image = np.concatenate([i[None, :] for i in image], axis=0)
+
         image = image.transpose(0, 3, 1, 2)
         image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
-     
+
         # preprocess mask
         if isinstance(mask, (PIL.Image.Image, np.ndarray)):
             mask = [mask]
 
-        if isinstance(mask, list) and isinstance(mask[0], PIL.Image.Image):
-            mask = [i.resize((width, height), resample=PIL.Image.LANCZOS) for i in mask]
-            mask = np.concatenate([np.array(m.convert("L"))[None, None, :] for m in mask], axis=0)
-            mask = mask.astype(np.float32) / 255.0
-        elif isinstance(mask, list) and isinstance(mask[0], np.ndarray):
-            mask = np.concatenate([m[None, None, :] for m in mask], axis=0)
-        
+        if isinstance(mask, list):
+            if isinstance(mask[0], PIL.Image.Image):
+                mask = [i.resize((width, height), resample=PIL.Image.LANCZOS) for i in mask]
+                mask = np.concatenate([np.array(m.convert("L"))[None, None, :] for m in mask], axis=0)
+                mask = mask.astype(np.float32) / 255.0
+            elif isinstance(mask[0], np.ndarray):
+                mask = np.concatenate([m[None, None, :] for m in mask], axis=0)
+
 
         mask[mask < 0.5] = 0
         mask[mask >= 0.5] = 1
@@ -147,10 +141,7 @@ def prepare_mask_and_masked_image(image, mask, height, width, return_image: bool
     masked_image = image * (mask < 0.5)
 
     # n.b. ensure backwards compatibility as old function does not return image
-    if return_image:
-        return mask, masked_image, image
-
-    return mask, masked_image 
+    return (mask, masked_image, image) if return_image else (mask, masked_image) 
 
 def result(var):
     return next(iter(var.values()))
@@ -233,19 +224,19 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
             return_tensors="np",
         )
         text_embeddings = self.text_encoder(text_input.input_ids)[self._text_encoder_output]
-    
+
 
         # do classifier free guidance
         do_classifier_free_guidance = guidance_scale > 1.0
         if do_classifier_free_guidance:
-        
+
             if negative_prompt is None:
                 uncond_tokens = [""]
             elif isinstance(negative_prompt, str):
                 uncond_tokens = [negative_prompt]
             else:
                 uncond_tokens = negative_prompt
-                
+
             tokens_uncond = self.tokenizer(
                 uncond_tokens,
                 padding="max_length",
@@ -258,7 +249,7 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
         # set timesteps
         accepts_offset = "offset" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
         extra_set_kwargs = {}
-        
+
         if accepts_offset:
             extra_set_kwargs["offset"] = 1
 
@@ -270,7 +261,7 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
         #preprocess image and mask
         mask, masked_image, init_image = prepare_mask_and_masked_image(
             image, mask_image, self.height, self.width, return_image=True)
-        
+
         mask, masked_image_latents = self.prepare_mask_latents(mask, masked_image, do_classifier_free_guidance)
 
         # get the initial random noise unless the user supplied it
@@ -307,17 +298,17 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
 
             # compute the previous noisy sample x_t -> x_t-1
             latents = scheduler.step(torch.from_numpy(noise_pred), t, torch.from_numpy(latents), **extra_step_kwargs)["prev_sample"].numpy()
-     
+
             if create_gif:
                 frames.append(latents)
-              
+
         if callback:
             callback(num_inference_steps, callback_userdata)
 
         # scale and decode the image latents with vae
-        
+
         image = self.vae_decoder(latents)[self._vae_d_output]
-      
+
         image = self.postprocess_image(image)
 
         if create_gif:
@@ -327,11 +318,11 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
             for i in range(0,len(frames)):
                 image = self.vae_decoder(frames[i])[self._vae_d_output]
                 image = self.postprocess_image(image)
-                output = gif_folder + "/" + str(i).zfill(3) +".png"
+                output = f"{gif_folder}/{str(i).zfill(3)}.png"
                 cv2.imwrite(output, image)
             with open(os.path.join(gif_folder, "prompt.json"), "w") as file:
                 json.dump({"prompt": prompt}, file)
-            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]  
+            frames_image =  [Image.open(image) for image in glob.glob(f"{gif_folder}/*.png")]
             frame_one = frames_image[0]
             gif_file=os.path.join(gif_folder,"stable_diffusion.gif")
             frame_one.save(gif_file, format="GIF", append_images=frames_image, save_all=True, duration=100, loop=0)
@@ -352,7 +343,7 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
                 Image encoded in latent space
         """
         latents_shape = (1, 4, self.height // 8, self.width // 8)
-   
+
         noise = np.random.randn(*latents_shape).astype(np.float32)
         if input_image is None:
             print("Image is NONE")
@@ -360,22 +351,18 @@ class StableDiffusionEngineInpainting(DiffusionPipeline):
             if isinstance(scheduler, LMSDiscreteScheduler):
              
                 noise = noise * scheduler.sigmas[0].numpy()
-                return noise, {}
             elif isinstance(scheduler, EulerDiscreteScheduler):
               
                 noise = noise * scheduler.sigmas.max().numpy()
-                return noise, {}
-            else:
-                return noise, {}
-       
+            return noise, {}
         moments = self.vae_encoder(input_image)[self._vae_e_output]
-      
+
         mean, logvar = np.split(moments, 2, axis=1)
-  
+
         std = np.exp(logvar * 0.5)
         latents = (mean + std * np.random.randn(*mean.shape)) * 0.18215
-       
-         
+
+
         latents = scheduler.add_noise(torch.from_numpy(latents), torch.from_numpy(noise), latent_timestep).numpy()
         return latents
 

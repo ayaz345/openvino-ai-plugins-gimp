@@ -25,7 +25,7 @@ def parse_devices(device_string):
     colon_position = device_string.find(':')
     if colon_position != -1:
         device_type = device_string[:colon_position]
-        if device_type == 'HETERO' or device_type == 'MULTI':
+        if device_type in ['HETERO', 'MULTI']:
             comma_separated_devices = device_string[colon_position + 1:]
             devices = comma_separated_devices.split(',')
             for device in devices:
@@ -85,11 +85,11 @@ class AsyncPipeline:
     def __init__(self, ie, model, model_path, plugin_config, device='CPU', max_num_requests=1):
         self.model = model
         self.logger = logging.getLogger()
-        
+
         ie.set_config(config={"CACHE_DIR": os.path.join(model_path, '..', 'cache')}, device_name=device)
         self.logger.info('Model Cached')        
 
-        self.logger.info('Loading network to {} plugin...'.format(device))
+        self.logger.info(f'Loading network to {device} plugin...')
         self.exec_net = ie.load_network(network=self.model.net, device_name=device,
                                         config=plugin_config, num_requests=max_num_requests)
         if max_num_requests == 0:
@@ -107,7 +107,7 @@ class AsyncPipeline:
         try:
             request, id, meta, preprocessing_meta = callback_args
             if status != 0:
-                raise RuntimeError('Infer Request has returned status code {}'.format(status))
+                raise RuntimeError(f'Infer Request has returned status code {status}')
             raw_outputs = {key: blob.buffer for key, blob in request.output_blobs.items()}
             self.completed_request_results[id] = (raw_outputs, meta, preprocessing_meta)
             self.empty_requests.append(request)
@@ -130,8 +130,7 @@ class AsyncPipeline:
         return None
 
     def get_result(self, id):
-        result = self.get_raw_result(id)
-        if result:
+        if result := self.get_raw_result(id):
             raw_result, meta, preprocess_meta = result
             return self.model.postprocess(raw_result, preprocess_meta), meta
         return None

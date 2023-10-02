@@ -46,7 +46,7 @@ class HpeAssociativeEmbedding(Model):
         self.w = (input_width + size_divisor - 1) // size_divisor * size_divisor
         default_input_shape = self.net.input_info[self.image_blob_name].input_data.shape
         input_shape = {self.image_blob_name: (default_input_shape[:-2] + [self.h, self.w])}
-        self.logger.info('Reshape net to {}'.format(input_shape))
+        self.logger.info(f'Reshape net to {input_shape}')
         self.net.reshape(input_shape)
 
         self.decoder = AssociativeEmbeddingDecoder(
@@ -71,8 +71,9 @@ class HpeAssociativeEmbedding(Model):
             if len(blob.input_data.shape) == 4:
                 image_blob_name = blob_name
             else:
-                raise RuntimeError('Unsupported {}D input layer "{}". Only 4D input layers are supported'
-                                   .format(len(blob.shape), blob_name))
+                raise RuntimeError(
+                    f'Unsupported {len(blob.shape)}D input layer "{blob_name}". Only 4D input layers are supported'
+                )
         if image_blob_name is None:
             raise RuntimeError('Failed to identify the input for the image.')
         return image_blob_name
@@ -116,10 +117,10 @@ class HpeAssociativeEmbedding(Model):
 def find_layer_by_name(name, layers):
     suitable_layers = [layer_name for layer_name in layers if layer_name.startswith(name)]
     if not suitable_layers:
-        raise ValueError('Suitable layer for "{}" output is not found'.format(name))
+        raise ValueError(f'Suitable layer for "{name}" output is not found')
 
     if len(suitable_layers) > 1:
-        raise ValueError('More than 1 layer matched to "{}" output'.format(name))
+        raise ValueError(f'More than 1 layer matched to "{name}" output')
 
     return suitable_layers[0]
 
@@ -144,15 +145,11 @@ class Pose:
 
     @property
     def tag(self):
-        if self.valid_points_num > 0:
-            return self.pose_tag
-        return None
+        return self.pose_tag if self.valid_points_num > 0 else None
 
     @property
     def center(self):
-        if self.valid_points_num > 0:
-            return self.c
-        return None
+        return self.c if self.valid_points_num > 0 else None
 
 
 class AssociativeEmbeddingDecoder:
@@ -196,7 +193,7 @@ class AssociativeEmbeddingDecoder:
             tags = tags[mask]
             joints = joints[mask]
 
-            if len(poses) == 0:
+            if not poses:
                 for tag, joint in zip(tags, joints):
                     pose = Pose(self.num_joints, embd_size)
                     pose.add(idx, joint, tag)

@@ -120,14 +120,14 @@ class FaceBoxes(Model):
 
     @staticmethod
     def calculate_anchors(list_x, list_y, min_size, image_size, step):
-        anchors = []
         s_kx = min_size / image_size[1]
         s_ky = min_size / image_size[0]
         dense_cx = [x * step / image_size[1] for x in list_x]
         dense_cy = [y * step / image_size[0] for y in list_y]
-        for cy, cx in itertools.product(dense_cy, dense_cx):
-            anchors.append([cx, cy, s_kx, s_ky])
-        return anchors
+        return [
+            [cx, cy, s_kx, s_ky]
+            for cy, cx in itertools.product(dense_cy, dense_cx)
+        ]
 
     def calculate_anchors_zero_level(self, f_x, f_y, min_sizes, image_size, step):
         anchors = []
@@ -154,9 +154,7 @@ class FaceBoxes(Model):
                 else:
                     anchors.extend(self.calculate_anchors([j + 0.5], [i + 0.5], self.min_sizes[k][0],
                                                           image_size, self.steps[k]))
-        anchors = np.clip(anchors, 0, 1)
-
-        return anchors
+        return np.clip(anchors, 0, 1)
 
     @staticmethod
     def resize_boxes(detections, image_size):

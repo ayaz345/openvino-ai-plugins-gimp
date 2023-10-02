@@ -46,7 +46,7 @@ class CenterNet(Model):
         image = inputs
         meta = {'original_shape': image.shape}
 
-        height, width = image.shape[0:2]
+        height, width = image.shape[:2]
         center = np.array([width / 2., height / 2.], dtype=np.float32)
         scale = max(height, width)
         trans_input = self.get_affine_transform(center, scale, 0, [self.w, self.h])

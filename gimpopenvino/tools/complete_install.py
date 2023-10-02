@@ -17,7 +17,7 @@ from openvino.runtime import Core
 def setup_python_weights(install_location=None):
     if not install_location:
         install_location = os.path.join(os.path.expanduser("~"), "openvino-ai-plugins-gimp")
-        
+
     if not os.path.isdir(install_location):
         os.mkdir(install_location)
     python_string = "python"
@@ -31,18 +31,13 @@ def setup_python_weights(install_location=None):
     step = 1
     print("\n##########")
     print(
-        "{}>> Reference Models present in weights folder. You can also download them from open model zoo.".format(
-            step
-        )
+        f"{step}>> Reference Models present in weights folder. You can also download them from open model zoo."
     )
     step += 1
     print(
-        "{}>> Please move the weights folder from the cloned repository: \n"
-        "openvino-ai-plugins-gimp".format(
-            step
-        )
+        f"{step}>> Please move the weights folder from the cloned repository: \nopenvino-ai-plugins-gimp"
     )
-    print("and place in: " + weight_path)
+    print(f"and place in: {weight_path}")
     step += 1
 
     plugin_loc = os.path.dirname(gimpopenvino.__file__)
@@ -58,15 +53,41 @@ def setup_python_weights(install_location=None):
 
     # For Linux, the python plugin scripts need to have executable permissions added.
     if platform.system() == "Linux":
-        subprocess.call(['chmod', '+x', plugin_loc + '/plugins/superresolution-ov/superresolution-ov.py'])
-        subprocess.call(['chmod', '+x', plugin_loc + '/plugins/stable-diffusion-ov/stable-diffusion-ov.py'])
-        subprocess.call(['chmod', '+x', plugin_loc + '/plugins/semseg-ov/semseg-ov.py'])
-        subprocess.call(['chmod', '+x', plugin_loc + '/plugins/inpainting-ov/inpainting-ov.py'])
-        subprocess.call(['chmod', '+x', plugin_loc + '/plugins/fast-style-transfer-ov/fast-style-transfer-ov.py'])
+        subprocess.call(
+            [
+                'chmod',
+                '+x',
+                f'{plugin_loc}/plugins/superresolution-ov/superresolution-ov.py',
+            ]
+        )
+        subprocess.call(
+            [
+                'chmod',
+                '+x',
+                f'{plugin_loc}/plugins/stable-diffusion-ov/stable-diffusion-ov.py',
+            ]
+        )
+        subprocess.call(
+            ['chmod', '+x', f'{plugin_loc}/plugins/semseg-ov/semseg-ov.py']
+        )
+        subprocess.call(
+            [
+                'chmod',
+                '+x',
+                f'{plugin_loc}/plugins/inpainting-ov/inpainting-ov.py',
+            ]
+        )
+        subprocess.call(
+            [
+                'chmod',
+                '+x',
+                f'{plugin_loc}/plugins/fast-style-transfer-ov/fast-style-transfer-ov.py',
+            ]
+        )
 
 
     print(
-        "{}>> Please add this path to Preferences --> Plug-ins in GIMP : ".format(step),
+        f"{step}>> Please add this path to Preferences --> Plug-ins in GIMP : ",
         os.path.join(plugin_loc, "plugins"),
     )
     print("##########\n")
